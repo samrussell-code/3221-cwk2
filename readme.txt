@@ -28,4 +28,7 @@ Please state the number of cores per machine (for Bragg 2.05, this is typically 
 
 A brief interpretation of your results:
 
+The speedup for a single machine gradually increases as number of total processes increases, since the workload is being split in parallel reducing the overall compute time.
 
+Once the second machine is introduced, and the process count is doubled once again, the runtime actually increases to be longer than the series runtime.
+I believe this is due to a combination of the network latency between the machines in the lab, and the initial overhead with distributing the function across processes.
