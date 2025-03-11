@@ -17,14 +17,15 @@ For the parallel speed-up S, please note that:
 
 No. Machines:   Total No. Processes:     Mean time (average of 3 runs) in seconds:        Parallel speed-up, S:
 =============   ====================     =========================================        =====================
-1                       1                          0.00862384                                        1                            
-1                       2                                                                                                                                     
-1                       4                                                                                                               
-1                       8                                                                                              
-2                       16                                                                                                                       
-2                       32                                                                                                            
+1                       1                          0.00982384                                        1                            
+1                       2                          0.00702618                                        1.3982                                                                  
+1                       4                          0.00659242                                        1.4902                                             
+1                       8                          0.00457276                                        2.1483                            
+2                       16                         0.0252841                                         0.3885                                                     
+2                       32                         0.0613511                                         0.1601                                          
 
-Please state the number of cores per machine (for Bragg 2.05, this is typically 12):
+Please state the number of cores per machine (for Bragg 2.05, this is typically 12): 48
 
 A brief interpretation of your results:
+
 

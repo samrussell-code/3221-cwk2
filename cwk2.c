@@ -24,10 +24,13 @@
 
 float calculateMeanMPI(float *globalData, int globalSize, int rank, int numProcs) {
     int localSize = globalSize / numProcs;
-    float *localData = (float *)malloc(localSize * sizeof(float));
+    float *localData = (float *)malloc(localSize * sizeof(float)); // this is uninitialised
 
     // global data -> all procs
+    //printf("global_size%d, numprocs%d\n",globalSize,numProcs);
+
     MPI_Scatter(globalData, localSize, MPI_FLOAT, localData, localSize, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    //printf("aftermpi\n");
 
     // local sum
     float localSum = 0.0f;
@@ -76,8 +79,9 @@ float calculateVarianceMPI(float *globalData, int globalSize, float mean, int ra
     float *localData = (float *)malloc(localSize * sizeof(float));
 
     // global data -> allprocs
+    //printf("beforempib\n");
     MPI_Scatter(globalData, localSize, MPI_FLOAT, localData, localSize, MPI_FLOAT, 0, MPI_COMM_WORLD);
-
+    //printf("aftermpib\n");
     //  sum square dif
     float localSumSqDiff = 0.0f;
     for (int i = 0; i < localSize; i++) {
@@ -144,10 +148,12 @@ int main( int argc, char **argv )
         printf( "Rank 0: Read in data set with %d floats.\n", globalSize );
     }
 
+    MPI_Bcast(&globalSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     // Calculate the number of floats per process. Note that only rank 0 has the correct value of localSize
     // at this point in the code. This will somehow need to be communicated to all other processes. Note also
     // that we can assume that globalSize is a multiple of numProcs.
-    //int localSize = globalSize / numProcs;          // = 0 at this point of the code for all processes except rank 0.
+    int localSize = globalSize / numProcs;          // = 0 at this point of the code for all processes except rank 0.
 
     // Start the timing now, after the data has been loaded (will only output on rank 0).
     double startTime = MPI_Wtime();
@@ -157,9 +163,7 @@ int main( int argc, char **argv )
     // Task 1: Calculate the mean using all available processes.
     //
     float mean = 0.0f;          // Your calculated mean should be placed in this variable.
-    if (rank == 0) {
-        mean = calculateMeanMPI(globalData, globalSize, rank, numProcs);
-    }
+    mean = calculateMeanMPI(globalData, globalSize, rank, numProcs);
     distributeMean(mean, rank, numProcs);
     
 
