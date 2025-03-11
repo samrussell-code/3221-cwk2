@@ -17,7 +17,7 @@ For the parallel speed-up S, please note that:
 
 No. Machines:   Total No. Processes:     Mean time (average of 3 runs) in seconds:        Parallel speed-up, S:
 =============   ====================     =========================================        =====================
-1                       1                                                                                              
+1                       1                          0.00862384                                        1                            
 1                       2                                                                                                                                     
 1                       4                                                                                                               
 1                       8                                                                                              

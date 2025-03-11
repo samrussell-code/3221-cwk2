@@ -3,7 +3,7 @@
 //
 // See lectures and/or the worksheet corresponding to this part of the module for instructions
 // on how to build and launch MPI programs. A simple makefile has also been included (usage optional).
-//
+// sudo apt-get update && sudo apt-get install -y mpich
 
 
 //
@@ -21,6 +21,83 @@
 // Some extra routines for this coursework. DO NOT MODIFY OR REPLACE THESE ROUTINES,
 // as this file will be replaced with a different version for assessment.
 #include "cwk2_extra.h"
+
+float calculateMeanMPI(float *globalData, int globalSize, int rank, int numProcs) {
+    int localSize = globalSize / numProcs;
+    float *localData = (float *)malloc(localSize * sizeof(float));
+
+    // global data -> all procs
+    MPI_Scatter(globalData, localSize, MPI_FLOAT, localData, localSize, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+    // local sum
+    float localSum = 0.0f;
+    for (int i = 0; i < localSize; i++) {
+        localSum += localData[i];
+    }
+
+    // reduce to global sum (rank 0 receives it)
+    float globalSum = 0.0f;
+    MPI_Reduce(&localSum, &globalSum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // mean (rank 0 computes it)
+    float mean = 0.0f;
+    if (rank == 0) {
+        mean = globalSum / globalSize;
+    }
+
+    // broadcast mean to all processes
+    MPI_Bcast(&mean, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+    free(localData);
+    return mean;
+}
+
+
+void distributeMean(float mean, int rank, int numProcs) {
+    int level, partner;
+    // second binary tree method
+    // mean sent to children
+    for (level = 1; level < numProcs; level *= 2) {
+        // if sender
+        if (rank < level && rank + level < numProcs) {
+            partner = rank + level;
+            MPI_Send(&mean, 1, MPI_FLOAT, partner, 0, MPI_COMM_WORLD);
+        }
+        // if receiver
+        else if (rank >= level && rank < level * 2) {
+            partner = rank - level;
+            MPI_Recv(&mean, 1, MPI_FLOAT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    }
+}
+
+float calculateVarianceMPI(float *globalData, int globalSize, float mean, int rank, int numProcs) {
+    int localSize = globalSize / numProcs;
+    float *localData = (float *)malloc(localSize * sizeof(float));
+
+    // global data -> allprocs
+    MPI_Scatter(globalData, localSize, MPI_FLOAT, localData, localSize, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+    //  sum square dif
+    float localSumSqDiff = 0.0f;
+    for (int i = 0; i < localSize; i++) {
+        float diff = localData[i] - mean;
+        localSumSqDiff += diff * diff;
+    }
+
+    // now reduce 
+    float globalSumSqDiff = 0.0f;
+    MPI_Reduce(&localSumSqDiff, &globalSumSqDiff, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // rank 0 does final calculation
+    float variance = 0.0f;
+    if (rank == 0) {
+        variance = globalSumSqDiff / globalSize;
+    }
+
+    free(localData);
+    return variance;
+}
 
 
 //
@@ -70,7 +147,7 @@ int main( int argc, char **argv )
     // Calculate the number of floats per process. Note that only rank 0 has the correct value of localSize
     // at this point in the code. This will somehow need to be communicated to all other processes. Note also
     // that we can assume that globalSize is a multiple of numProcs.
-    int localSize = globalSize / numProcs;          // = 0 at this point of the code for all processes except rank 0.
+    //int localSize = globalSize / numProcs;          // = 0 at this point of the code for all processes except rank 0.
 
     // Start the timing now, after the data has been loaded (will only output on rank 0).
     double startTime = MPI_Wtime();
@@ -80,12 +157,18 @@ int main( int argc, char **argv )
     // Task 1: Calculate the mean using all available processes.
     //
     float mean = 0.0f;          // Your calculated mean should be placed in this variable.
+    if (rank == 0) {
+        mean = calculateMeanMPI(globalData, globalSize, rank, numProcs);
+    }
+    distributeMean(mean, rank, numProcs);
+    
 
 
     //
     // Task 2. Calculate the variance using all processes.
     //
     float variance = 0.0f;      // Your calculated variance should be placed in this variable.
+    variance = calculateVarianceMPI(globalData, globalSize, mean, rank, numProcs);
 
 
     //
